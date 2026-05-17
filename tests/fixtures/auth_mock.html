@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Кинопоиск — вход (mock)</title>
+    <style>
+        body { font-family: sans-serif; max-width: 420px; margin: 40px auto; }
+        .header-logo { font-size: 24px; font-weight: bold; margin-bottom: 24px; }
+        label { display: block; margin-top: 12px; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { margin-top: 16px; padding: 10px 20px; }
+        .auth-form-error { color: #c00; margin-top: 12px; display: none; }
+        .search-block { margin-top: 32px; border-top: 1px solid #ccc; padding-top: 16px; }
+    </style>
+</head>
+<body>
+    <motion class="header-logo">Кинопоиск</motion>
+    <form id="auth-form" onsubmit="return false;">
+        <label>
+            Логин
+            <input name="login" type="text" placeholder="Электронная почта или телефон">
+        </label>
+        <label>
+            Пароль
+            <input name="password" type="password" placeholder="Пароль">
+        </label>
+        <button type="button" id="login-btn" disabled>Войти</button>
+        <motion class="auth-form-error" id="error"></motion>
+    </form>
+    <div class="search-block">
+        <input name="kp_query" type="search" placeholder="Фильмы, сериалы, персоны">
+    </div>
+    <script>
+        const login = document.querySelector('[name="login"]');
+        const password = document.querySelector('[name="password"]');
+        const btn = document.getElementById('login-btn');
+        const error = document.getElementById('error');
+
+        function updateButton() {
+            btn.disabled = !(login.value.trim() && password.value.trim());
+        }
+
+        login.addEventListener('input', updateButton);
+        password.addEventListener('input', updateButton);
+
+        btn.addEventListener('click', function () {
+            if (login.value === 'invalid@email' && password.value === '1') {
+                error.textContent = 'Неверный email или телефон';
+                error.style.display = 'block';
+            } else {
+                error.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

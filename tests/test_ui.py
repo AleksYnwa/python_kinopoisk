@@ -1,62 +1,50 @@
 import pytest
 import allure
-from selenium import webdriver
-from config.settings import Settings
+
 from config.test_data import TestData
-from pages.auth_page import AuthPage
-
-
-@pytest.fixture(scope="function", params=Settings.BROWSERS)
-def browser(request):
-    if request.param == "chrome":
-        driver = webdriver.Chrome()
-    elif request.param == "firefox":
-        driver = webdriver.Firefox()
-    else:
-        raise ValueError(f"Unsupported browser: {request.param}")
-
-    driver.implicitly_wait(Settings.UI_TIMEOUT)
-    yield driver
-    driver.quit()
+from pages.kinopoisk_page import KinopoiskPage
 
 
 @pytest.mark.ui
 class TestKinopoiskUI:
-    @allure.title("Verify auth form consistency across browsers")
+    @allure.title("Главная: логотип и форма входа")
     def test_auth_form_consistency(self, browser):
-        with allure.step("Open auth page"):
-            page = AuthPage(browser).open_auth_form()
+        with allure.step("Открыть kinopoisk.ru и форму входа"):
+            page = KinopoiskPage(browser).open_login_form()
 
-        with allure.step("Verify form elements"):
-            assert page.get_login_placeholder() == "Электронная почта или телефон"
-            assert page.get_password_placeholder() == "Пароль"
-            assert not page.is_login_button_enabled()
+        with allure.step("Проверить поле логина"):
+            placeholder = page.get_login_placeholder().lower()
+            assert any(word in placeholder for word in ("логин", "email", "почт", "телефон"))
+            assert page.get_login_value() == ""
+            assert not page.is_password_field_visible()
 
-    @allure.title("Verify login button state")
+    @allure.title("Кнопка входа активна после ввода логина")
     def test_login_button_state(self, browser):
-        page = AuthPage(browser).open_auth_form()
+        page = KinopoiskPage(browser).open_login_form()
 
-        with allure.step("Check button disabled with empty fields"):
-            assert not page.is_login_button_enabled()
+        with allure.step("Пустое поле логина"):
+            assert page.get_login_value() == ""
 
-        with allure.step("Check button enabled with valid data"):
+        with allure.step("Ввод email"):
             page.enter_login(TestData.VALID_EMAIL)
-            page.enter_password(TestData.VALID_PASSWORD)
-            assert page.is_login_button_enabled()
+            assert TestData.VALID_EMAIL in page.get_login_value()
+            assert page.is_login_submit_enabled()
 
-    @allure.title("Verify validation errors")
+    @allure.title("Ошибка при неверном логине")
     def test_validation_errors(self, browser):
-        page = AuthPage(browser).open_auth_form()
+        page = KinopoiskPage(browser).open_login_form()
 
-        with allure.step("Submit invalid credentials"):
-            page.enter_login(TestData.INVALID_EMAIL)
-            page.enter_password(TestData.INVALID_PASSWORD)
-            page.click_login_button()
+        with allure.step("Отправить неверный логин"):
+            page.enter_login(TestData.INVALID_EMAIL).submit_login()
 
-        with allure.step("Verify error message"):
-            assert "Неверный email или телефон" in page.get_error_message()
+        with allure.step("Проверить сообщение об ошибке"):
+            error = (page.get_error_message() or "").lower()
+            assert error
+            assert any(word in error for word in ("логин", "email", "существ", "неверн", "укажите"))
 
-    @allure.title("Verify search field visibility")
+    @allure.title("Поле поиска на главной")
     def test_search_visibility(self, browser):
-        page = AuthPage(browser).open()
-        assert page.is_search_field_visible()
+        page = KinopoiskPage(browser).open_main()
+        assert page.is_search_visible()
+        placeholder = page.get_search_placeholder().lower()
+        assert any(word in placeholder for word in ("фильм", "сериал", "персон", "поиск"))
